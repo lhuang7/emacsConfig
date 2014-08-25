@@ -3,8 +3,167 @@
   (require 'package)
   (package-initialize)
   (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
-  ;; (setq package-archive-enable-alist '(("melpa" deft magit)))
   )
+
+;; User Setting
+(setq user-full-name "Lingpo Huang")
+(setq user-mail-address "lingpo.huang@plowtech.net")
+
+;; Setting Default Package
+ (require 'cl)
+(defvar ling/packages '(  auto-complete
+                          autopair
+                          ;; haskell
+                          haskell-mode
+			  shm
+			  ;; theme
+			  color-theme
+			  ;; ghc-mod
+			  ghc
+			  company
+			  company-ghc
+			  ;; helm
+			  helm
+			  helm-git-grep
+			  helm-ls-git
+			  popup
+			  ;; rainbow
+			  rainbow-delimiters
+                          ;; git
+                          magit
+			  ;; markdown
+                          markdown-mode
+                          web-mode
+			  ;; yaml
+                          yaml-mode)
+  "Default packages")
+
+;; When Emacs boots, check to make sure all of the packages defined in abedra/packages are installed. If not, have ELPA take care of it.
+(defun ling/packages-installed-p ()
+  (loop for pkg in ling/packages
+        when (not (package-installed-p pkg)) do (return nil)
+        finally (return t)))
+
+(unless (ling/packages-installed-p)
+  (message "%s" "Refreshing package database...")
+  (package-refresh-contents)
+  (dolist (pkg ling/packages)
+    (when (not (package-installed-p pkg))
+      (package-install pkg))))
+
+
+;; haskell module - Optionals
+;; cabal install hasktags stylish-haskell present ghc-mod hlint hoogle structured-haskell-mode
+
+;; skip straight to the scratch buffer.
+(setq inhibit-splash-screen t
+      initial-scratch-message nil)
+
+;; Turn off the scroll bar, menu bar, and tool bar. There isn't really a reason to have them on.
+(scroll-bar-mode -1)
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+
+;; Marking text
+(delete-selection-mode t)
+(transient-mark-mode t)
+(setq x-select-enable-clipboard t)
+
+;; Nobody likes to have to type out the full yes or no when Emacs asks. Which it does often. Make it one character.
+(defalias 'yes-or-no-p 'y-or-n-p)
+
+;; Miscellaneous key binding stuff that doesn't fit anywhere else.
+;; (global-set-key (kbd "RET") 'newline-and-indent)
+(global-set-key (kbd "C-;") 'comment-or-uncomment-region)
+;; (global-set-key (kbd "M-/") 'hippie-expand)
+;; (global-set-key (kbd "C-+") 'text-scale-increase)
+;; (global-set-key (kbd "C--") 'text-scale-decrease)
+;; (global-set-key (kbd "C-c C-k") 'compile)
+(global-set-key (kbd "C-x g") 'magit-status)
+
+;; Temporary file management
+(setq backup-directory-alist `((".*" . ,temporary-file-directory)))
+(setq auto-save-file-name-transforms `((".*" ,temporary-file-directory t)))
+
+;; auto-pair
+(require 'autopair)
+
+;; Turn on auto complete.
+(require 'auto-complete-config)
+(ac-config-default)
+
+;; This re-indents, untabifies, and cleans up whitespace. 
+(defun untabify-buffer ()
+  (interactive)
+  (untabify (point-min) (point-max)))
+
+(defun indent-buffer ()
+  (interactive)
+  (indent-region (point-min) (point-max)))
+
+(defun cleanup-buffer ()
+  "Perform a bunch of operations on the whitespace content of a buffer."
+  (interactive)
+  (indent-buffer)
+  (untabify-buffer)
+  (delete-trailing-whitespace))
+
+(defun cleanup-region (beg end)
+  "Remove tmux artifacts from region."
+  (interactive "r")
+  (dolist (re '("\\\\│\·*\n" "\W*│\·*"))
+    (replace-regexp re "" nil beg end)))
+
+(global-set-key (kbd "C-x M-t") 'cleanup-region)
+(global-set-key (kbd "C-c n") 'cleanup-buffer)
+
+;; The built-in Emacs spell checker. Turn off the welcome flag because it is annoying and breaks on quite a few systems. Specify the location of the spell check program so it loads properly.
+(setq flyspell-issue-welcome-flag nil)
+(if (eq system-type 'darwin)
+    (setq-default ispell-program-name "/usr/local/bin/aspell")
+  (setq-default ispell-program-name "/usr/bin/aspell"))
+(setq-default ispell-list-command "list")
+
+;; Web-mode
+(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.js?\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.css?\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.xml?\\'" . web-mode))
+
+;; Yaml Mode
+(add-to-list 'auto-mode-alist '("\\.yml$" . yaml-mode))
+(add-to-list 'auto-mode-alist '("\\.yaml$" . yaml-mode))
+
+;; MarkDown Mode
+(add-to-list 'auto-mode-alist '("\\.md$" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.mdown$" . markdown-mode))
+(add-hook 'markdown-mode-hook
+          (lambda ()
+            (visual-line-mode t)
+            (writegood-mode t)
+            (flyspell-mode t)))
+(setq markdown-command "pandoc --smart -f markdown -t html")
+
+
+;; Haskell Mode
+(setq-default indicate-empty-lines t)
+(when (not indicate-empty-lines)
+  (toggle-indicate-empty-lines))
+
+
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(inhibit-startup-screen t))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
 
 ;;Inf haskell
 (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
@@ -29,10 +188,6 @@
 (define-key haskell-mode-map (kbd "C-c c") 'haskell-process-cabal)
 (define-key haskell-mode-map (kbd "SPC") 'haskell-mode-contextual-space)
 
-;; Theme -- dark-laptop
-(require 'color-theme)
-(color-theme-initialize)
-(color-theme-dark-laptop)
 
 ;; Helm
 (setq initial-scratch-message (concat initial-scratch-message
@@ -73,3 +228,41 @@
 (require 'helm-ls-git)
 (global-set-key (kbd "C-x C-u") 'helm-ls-git-ls)
 (global-set-key (kbd "C-x C-i") 'helm-git-grep)
+
+;; Cabal Path
+(setenv "PATH" (concat "~/.cabal/bin:" (getenv "PATH")))
+(add-to-list 'exec-path "~/.cabal/bin")
+
+;; ghc mod
+(autoload 'ghc-init "ghc" nil t)
+(autoload 'ghc-debug "ghc" nil t)
+(add-hook 'haskell-mode-hook (lambda () (ghc-init)))
+
+;; ghc-company
+(require 'company)
+(add-hook 'haskell-mode-hook 'company-mode)
+
+(add-to-list 'company-backends 'company-ghc)
+(custom-set-variables '(company-ghc-show-info t))
+
+;; Structured-haskell mode
+(require 'shm)
+(add-hook 'haskell-mode-hook 'structured-haskell-mode)
+
+;; Rainbow Delimiters
+(require 'rainbow-delimiters)
+(global-rainbow-delimiters-mode)
+
+;; haskell mode
+;; (setq haskell-stylish-on-save t)
+
+;; Themes
+;; Dark-laptop
+(require 'color-theme)
+(color-theme-initialize)
+(color-theme-dark-laptop)
+
+;; Terminal Theme
+(if window-system
+    ()
+  (load-theme 'wombat t))
