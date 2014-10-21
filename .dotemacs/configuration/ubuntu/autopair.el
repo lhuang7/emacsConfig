@@ -1,0 +1,2 @@
+;; auto-pair
+(require 'autopair)
